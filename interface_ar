@@ -1,0 +1,153 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+import sys
+from PyQt5 import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+
+class MyWin (QWidget):
+    def __init__(self):
+        super().__init__()
+        
+        #Фоновое Изображение
+        self.setLayout(QVBoxLayout())
+        self.pixmap = QPixmap('interspace.jpg')
+        palette = QPalette()
+        scaled = self.pixmap.scaled(self.size(), Qt.IgnoreAspectRatio)
+        palette.setBrush(QPalette.Background, QBrush(scaled))
+        self.setPalette(palette)
+        
+        #Вентиляция(выкл)
+        self.pixmap2 = QPixmap('vent_off.png')
+        self.label = QLabel("", self)
+        self.label.setGeometry(535, 35, 100, 100)
+        self.pixmap21 = self.pixmap2.scaled(90, 90, Qt.KeepAspectRatio, Qt.FastTransformation)
+        self.label.setPixmap(self.pixmap21)
+        
+        #Пелетье(холод)
+        self.pixmap3 = QPixmap('cold.png')
+        self.label = QLabel("", self)
+        self.label.setGeometry(535, 200, 100, 100)
+        self.pixmap31 = self.pixmap3.scaled(90, 90, Qt.KeepAspectRatio, Qt.FastTransformation)
+        self.label.setPixmap(self.pixmap31)
+        
+        #Работоспособность Космонавта
+        self.lbl0 = QLabel(self)
+        self.lbl0.setText('CurrStatus')
+        self.lbl0.setGeometry(34,12,75,50)
+        
+        #Содержание CO2
+        self.lbl1 = QLabel(self)
+        self.lbl1.setText('CO2')
+        self.lbl1.setGeometry(370,6,75,50)
+        
+        #Температура в Скафандре
+        self.lbl2 = QLabel(self)
+        self.lbl2.setText('T_SK')
+        self.lbl2.setGeometry(410,6,75,50)
+        
+        #Давление в Скафандре
+        self.lbl3 = QLabel(self)
+        self.lbl3.setText('P_SK')
+        self.lbl3.setGeometry(450,6,75,50)
+        
+        #Заряд Батареи
+        self.lbl4 = QLabel(self)
+        self.lbl4.setText('Ch_B')
+        self.lbl4.setGeometry(490,6,75,50)
+        self.showFullScreen()
+        
+        #Работоспособность Космонавта
+        pbar_v0 = QProgressBar(self)
+        pbar_v0.setOrientation(Qt.Vertical)
+        pbar_v0.setGeometry(32,51, 79, 410)
+        pbar_v0.show()
+        
+        #Содержание CO2
+        pbar_v1 = QProgressBar(self)
+        pbar_v1.setOrientation(Qt.Vertical)
+        pbar_v1.setGeometry(370,40, 32, 333)
+        pbar_v1.show()
+        
+        #Температура в Скафандре
+        pbar_v2 = QProgressBar(self)
+        pbar_v2.setOrientation(Qt.Vertical)
+        pbar_v2.setGeometry(410,40, 32, 333)
+        pbar_v2.show()
+        
+        #Давление в Скафандре
+        pbar_v3 = QProgressBar(self)
+        pbar_v3.setOrientation(Qt.Vertical)
+        pbar_v3.setGeometry(450,40, 32, 333)
+        pbar_v3.show()
+        
+        #Заряд Батареи
+        pbar_v4 = QProgressBar(self)
+        pbar_v4.setOrientation(Qt.Vertical)
+        pbar_v4.setGeometry(490,40, 32, 333)
+        pbar_v4.show()
+        self.setWindowTitle('PipBoy')
+
+    #Подгон картинки под размер
+    def resizeEvent(self, event):
+        palette = QPalette()
+        scaled = self.pixmap.scaled(self.size(), Qt.IgnoreAspectRatio)
+        palette.setBrush(QPalette.Background, QBrush(scaled))
+        self.setPalette(palette)
+        
+    #Закрытие при нажатии 
+    def keyPressEvent(self, e):
+        if e.key() == Qt.Key_Escape:
+            self.close()
+
+    #Изменение Вентиляции(вкл)
+    def ChangeVent(self):
+        self.pixmap3 = QPixmap('vent_on.png')
+        self.label = QLabel("", self)
+        self.label.setGeometry(535, 35, 100, 100)
+        self.pixmap31 = self.pixmap3.scaled(90, 90, Qt.KeepAspectRatio, Qt.FastTransformation)
+        self.label.setPixmap(self.pixmap31)
+
+    #Изменение Температуры Пелетье
+    def ChangeTemp(self):
+        self.pixmap4 = QPixmap('hot.png')
+        self.label = QLabel("", self)
+        self.label.setGeometry(535, 200, 100, 100)
+        self.pixmap41 = self.pixmap4.scaled(90, 90, Qt.KeepAspectRatio, Qt.FastTransformation)
+        self.label.setPixmap(self.pixmap41)
+
+        #Изменение показаний
+        def time(self):
+            self.read_ser0 = self.ser.read(1)
+            if self.read_ser0 == b'Z':
+
+                #Ситывание данных с порта
+                self.read_ser1 = self.ser.read(4)
+                self.read_ser2 = self.ser.read(4)
+                self.read_ser3 = self.ser.read(4)
+                self.read_ser4 = self.ser.read(4)
+                self.read_ser5 = self.ser.read(4)
+                self.read_ser6 = self.ser.read(4)
+
+                #Преобразование данных
+                self.a = struct.unpack('f', read_ser1)
+                self.b = struct.unpack('f', read_ser2)
+                self.c = struct.unpack('f', read_ser3)
+                self.d = struct.unpack('f', read_ser4)
+                self.e = struct.unpack('f', read_ser5)
+                self.f = struct.unpack('f', read_ser6)
+
+                #Изменение показаний
+                self.pbar_v1.setProperty("value", a)
+                self.pbar_v2.setProperty("value", b)
+                self.pbar_v3.setProperty("value", c)
+                self.pbar_v4.setProperty("value", d)
+            
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = MyWin()
+    ex.show()
+    sys.exit(app.exec_())
