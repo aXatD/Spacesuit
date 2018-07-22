@@ -1,0 +1,237 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+import sys
+import os
+from PyQt5 import *
+from table import *
+from text import *
+import threading
+import struct
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+import socket
+import serial
+
+
+class Text(QWidget, Ui_Form2):
+    def __init__(self, parent = None):
+        super().__init__()
+        QtWidgets.QWidget.__init__(self, parent)
+        self.grid = QGridLayout(self)
+        self.ui = Ui_Form2()
+        self.ui.setupUi(self)
+        self.ui.textEdit.setDisabled(True)
+
+        self.sock = socket.socket()
+        self.sock.bind(('127.0.0.1', 9001))
+        self.sock.listen(1)
+
+        my_thread = threading.Thread(target=self.socket_work)
+        my_thread.start()
+        self.ui.textEdit.setStyleSheet('font: 25pt "MS Shell Dlg 2";')
+        # self.append_s.connect(self.append)
+    def socket_work(self):
+        #conn, addr = self.sock.accept()
+        #self.append(addr[0] + str(addr[1]))
+        for i in range(100):
+            conn, addr = self.sock.accept()
+            data = conn.recv(10000)
+            if not data:
+                pass
+            else:
+                self.append(str(data)[2:len(data)+2])
+            conn.close()
+
+    def append(self, data):
+        self.ui.textEdit.append(data)
+
+class Graph(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.pix = QPixmap("interspace.jpg")
+
+        self.grid = QGridLayout(self)
+
+        # Вентиляция(выкл)
+        self.pixmap2 = QPixmap('vent_off.png')
+        self.label = QLabel("", self)
+        self.label.setGeometry(535, 35, 100, 100)
+        self.pixmap21 = self.pixmap2.scaled(90, 90, Qt.KeepAspectRatio, Qt.FastTransformation)
+        self.label.setPixmap(self.pixmap21)
+
+        # Пелетье(холод)
+        self.pixmap3 = QPixmap('cold.png')
+        self.label = QLabel("", self)
+        self.label.setGeometry(535, 200, 100, 100)
+        self.pixmap31 = self.pixmap3.scaled(90, 90, Qt.KeepAspectRatio, Qt.FastTransformation)
+        self.label.setPixmap(self.pixmap31)
+
+        # Работоспособность Космонавта
+        self.lbl0 = QLabel(self)
+        self.lbl0.setText('CurrStatus')
+        self.lbl0.setGeometry(34, 12, 75, 50)
+
+        # Содержание CO2
+        self.lbl1 = QLabel(self)
+        self.lbl1.setText('CO2')
+        self.lbl1.setGeometry(370, 6, 75, 50)
+
+        # Температура в Скафандре
+        self.lbl2 = QLabel(self)
+        self.lbl2.setText('T_SK')
+        self.lbl2.setGeometry(410, 6, 75, 50)
+
+        # Давление в Скафандре
+        self.lbl3 = QLabel(self)
+        self.lbl3.setText('P_SK')
+        self.lbl3.setGeometry(450, 6, 75, 50)
+
+        # Заряд Батареи
+        self.lbl4 = QLabel(self)
+        self.lbl4.setText('T_K')
+        self.lbl4.setGeometry(490, 6, 75, 50)
+        self.showFullScreen()
+
+        # Работоспособность Космонавта
+        self.pbar_v0 = QProgressBar(self)
+        self.pbar_v0.setOrientation(Qt.Vertical)
+        self.pbar_v0.setGeometry(32, 51, 79, 410)
+        self.pbar_v0.show()
+
+        # Содержание CO2
+        self.pbar_v1 = QProgressBar(self)
+        self.pbar_v1.setOrientation(Qt.Vertical)
+        self.pbar_v1.setGeometry(370, 40, 32, 333)
+        self.pbar_v1.show()
+
+        # Температура в Скафандре
+        self.pbar_v2 = QProgressBar(self)
+        self.pbar_v2.setOrientation(Qt.Vertical)
+        self.pbar_v2.setGeometry(410, 40, 32, 333)
+        self.pbar_v2.show()
+
+        # Давление в Скафандре
+        self.pbar_v3 = QProgressBar(self)
+        self.pbar_v3.setOrientation(Qt.Vertical)
+        self.pbar_v3.setGeometry(450, 40, 32, 333)
+        self.pbar_v3.show()
+
+        # Заряд Батареи
+        self.pbar_v4 = QProgressBar(self)
+        self.pbar_v4.setOrientation(Qt.Vertical)
+        self.pbar_v4.setGeometry(490, 40, 32, 333)
+        self.pbar_v4.show()
+        self.setWindowTitle('PipBoy')
+
+        # Открытие Порта
+        self.ser = serial.Serial("COM9")
+        self.ser.baudrate = 9600
+
+        # Запуск Таймера
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.time)
+        self.timer.start(500)
+
+    # Изменение показаний
+    def time(self):
+        self.read_ser0 = self.ser.read(1)
+        if self.read_ser0 == b'Z':
+            # Ситывание данных с порта
+            self.read_ser1 = self.ser.read(4)  # Давление
+            self.read_ser2 = self.ser.read(4)  # CO2
+            self.read_ser3 = self.ser.read(4)  # Температура в Скаандре
+            self.read_ser4 = self.ser.read(4)  # Заряд Батарей
+            self.read_ser5 = self.ser.read(4)  # Температура Космонавта
+            # self.read_ser6 = self.ser.read(4) #Температура Радиатора
+            # self.read_ser7 = self.ser.read(2) #Вкл/Выкл вентилятор
+            # self.read_ser8 = self.ser.read(2) #Вкл/Выкл пелетье
+
+            # Преобразование данных
+            self.a = struct.unpack('f', self.read_ser1)  # Давление
+            self.b = struct.unpack('f', self.read_ser2)  # CO2
+            self.c = struct.unpack('f', self.read_ser3)  # Температура в Скаандре
+            self.d = struct.unpack('f', self.read_ser4)  # Заряд Батарей
+            self.e = struct.unpack('f', self.read_ser5)  # Температура Космонавта
+            # self.f = struct.unpack('f', self.read_ser6) #Температура Радиатора
+
+        # Изменение показаний
+        self.pbar_v1.setProperty("value", int(self.c[0]))  # Давление
+        self.pbar_v2.setProperty("value", int(self.d[0]))  # CO2
+        self.pbar_v3.setProperty("value", int(self.a[0]))  # Температура в Скаандре
+        self.pbar_v4.setProperty("value", int(self.b[0]))  # Заряд Батарей
+
+    def paintEvent(self, QPaintEvent):
+        painter = QPainter(self)
+        painter.drawPixmap(self.rect(), self.pix)
+
+    # Изменение Вентиляции(вкл)
+    def ChangeVent(self):
+        self.pixmap3 = QPixmap('vent_on.png')
+        self.label = QLabel("", self)
+        self.label.setGeometry(535, 35, 100, 100)
+        self.pixmap31 = self.pixmap3.scaled(90, 90, Qt.KeepAspectRatio, Qt.FastTransformation)
+        self.label.setPixmap(self.pixmap31)
+
+    # Изменение Температуры Пелетье
+    def ChangeTemp(self):
+        self.pixmap4 = QPixmap('hot.png')
+        self.label = QLabel("", self)
+        self.label.setGeometry(535, 200, 100, 100)
+        self.pixmap41 = self.pixmap4.scaled(90, 90, Qt.KeepAspectRatio, Qt.FastTransformation)
+        self.label.setPixmap(self.pixmap41)
+
+class Table(QWidget, Ui_Form):
+    def __init__(self, parent = None):
+        super().__init__()
+        QtWidgets.QWidget.__init__(self, parent)
+        self.grid = QGridLayout(self)
+        self.ui = Ui_Form()
+        self.ui.setupUi(self)
+
+class MainWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.gr = Graph()
+        self.tb = Table()
+        self.tx = Text()
+
+        self.lay = QStackedLayout(self)
+
+        self.lay.addWidget(self.gr)
+        self.lay.addWidget(self.tx)
+        self.lay.addWidget(self.tb)
+
+
+        self.numbers = 3
+        self.i = 0
+
+        self.lay.setCurrentWidget(self.gr)
+        self.setGeometry(0, 0, 800, 480)
+
+    def mousePressEvent(self, QMouseEvent):
+        self.x = QMouseEvent.x()
+        self.y = QMouseEvent.y()
+        if (self.x > 400):
+            self.i = self.i + 1
+        else:
+            self.i = self.i - 1
+        if (self.i >= self.numbers):
+            self.i = 0
+        if (self.i < 0):
+            self.i = self.numbers
+        self.lay.setCurrentIndex(self.i)
+
+    # Закрытие при нажатии
+    def keyPressEvent(self, e):
+        if e.key() == Qt.Key_Escape:
+            self.close()
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = MainWindow()
+    ex.show()
+    sys.exit(app.exec_())
